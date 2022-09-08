@@ -20,7 +20,7 @@ Route::get('/', function()
 {
     return View::make('pages.home');
 });
-Route::get('/about', function()
+Route::get('/contact', function()
 {
     return View::make('pages.contact');
 });

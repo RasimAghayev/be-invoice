@@ -1,6 +1,17 @@
+<!-- Required meta tags -->
 <meta charset="utf-8">
-<meta name="description" content="">
-<meta name="Saquib" content="Blade">
-<title>Checkout our layout</title>
-<!-- load bootstrap from a cdn -->
-<link rel="stylesheet" href="//netdna.bootstrapcdn.com/twitter-bootstrap/3.0.3/css/bootstrap-combined.min.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>AutoLux Reporting</title>
+<!-- plugins:css -->
+<link rel="stylesheet" href="{{ asset('assets/vendors/simple-line-icons/css/simple-line-icons.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/vendors/flag-icon-css/css/flag-icon.min.css') }}">
+<link rel="stylesheet" href="{{ asset('assets/vendors/css/vendor.bundle.base.css') }}">
+<!-- endinject -->
+<!-- Plugin css for this page -->
+<!-- End plugin css for this page -->
+<!-- inject:css -->
+<!-- endinject -->
+<!-- Layout styles -->
+<link rel="stylesheet" href="{{ asset('assets/css/demo_1/style.css') }}">
+<!-- End layout styles -->
+<link rel="shortcut icon" href="{{ asset('assets/images/favicon.png') }}" />
