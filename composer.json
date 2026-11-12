@@ -1,24 +1,27 @@
 {
-    "name": "laravel/laravel",
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "rasimaghayev/be-invoice",
     "type": "project",
-    "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
+    "description": "Invoice platform API: customers, products/services, invoices, payments, Shopify sync, Spotify metadata enrichment, and reconciliation hooks.",
+    "keywords": ["laravel", "invoice", "billing", "api", "shopify", "spotify"],
     "license": "MIT",
     "require": {
-        "php": "^8.0.2",
-        "guzzlehttp/guzzle": "^7.2",
+        "php": "^8.4",
+        "darkaonline/l5-swagger": "^9.0",
+        "guzzlehttp/guzzle": "^7.9",
         "laravel/framework": "^12.0",
-        "laravel/sanctum": "^3.0",
-        "laravel/tinker": "^3.0"
+        "laravel/sanctum": "^4.0",
+        "laravel/tinker": "^2.10"
     },
     "require-dev": {
-        "fakerphp/faker": "^1.9.1",
-        "laravel/pint": "^1.0",
-        "laravel/sail": "^1.0.1",
-        "mockery/mockery": "^1.4.4",
-        "nunomaduro/collision": "^8.0",
-        "phpunit/phpunit": "^9.5.10",
-        "spatie/laravel-ignition": "^2.0"
+        "fakerphp/faker": "^1.23",
+        "larastan/larastan": "^3.0",
+        "laravel/pail": "^1.2",
+        "laravel/pint": "^1.18",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.6",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^11.5"
     },
     "autoload": {
         "psr-4": {
@@ -44,8 +47,15 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
         "post-create-project-cmd": [
-            "@php artisan key:generate --ansi"
-        ]
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "lint": ["vendor/bin/pint --test"],
+        "lint:fix": ["vendor/bin/pint"],
+        "analyse": ["vendor/bin/phpstan analyse --memory-limit=1G"],
+        "test": ["vendor/bin/phpunit"],
+        "quality": ["@lint", "@analyse", "@test"]
     },
     "extra": {
         "laravel": {
@@ -57,9 +67,10 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
-            "pestphp/pest-plugin": true
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

@@ -1,55 +1,64 @@
 <?php
 
-/*
-|--------------------------------------------------------------------------
-| Create The Application
-|--------------------------------------------------------------------------
-|
-| The first thing we will do is create a new Laravel application instance
-| which serves as the "glue" for all the components of Laravel, and is
-| the IoC container for the system binding all of the various parts.
-|
-*/
+declare(strict_types=1);
 
-$app = new Illuminate\Foundation\Application(
-    $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
-);
+use App\Http\Responses\ErrorApiResponse;
+use App\Http\Responses\ErrorInternalServerErrorResponse;
+use App\Http\Responses\ErrorNotFoundResponse;
+use App\Http\Responses\ErrorTooManyAttemptsResponse;
+use App\Http\Responses\ErrorUnauthenticatedResponse;
+use App\Http\Responses\ErrorValidationResponse;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
-/*
-|--------------------------------------------------------------------------
-| Bind Important Interfaces
-|--------------------------------------------------------------------------
-|
-| Next, we need to bind some important interfaces into the container so
-| we will be able to resolve them when needed. The kernels serve the
-| incoming requests to this application from both the web and CLI.
-|
-*/
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up'
+    )
+    ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->group('api', [
+            EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
+    })
+    ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+            if ($e instanceof HttpResponseException) {
+                return null;
+            }
 
-$app->singleton(
-    Illuminate\Contracts\Http\Kernel::class,
-    App\Http\Kernel::class
-);
+            $response = match (true) {
+                $e instanceof AuthenticationException => ErrorUnauthenticatedResponse::make(),
+                $e instanceof ValidationException => ErrorValidationResponse::make($e->errors()),
+                $e instanceof ThrottleRequestsException => ErrorTooManyAttemptsResponse::make(),
+                $e instanceof AuthorizationException, $e instanceof AccessDeniedHttpException => ErrorApiResponse::make($e->getMessage() ?: 'Forbidden', 403),
+                $e instanceof RouteNotFoundException, $e instanceof NotFoundHttpException => ErrorNotFoundResponse::make($e->getMessage() ?: 'Resource not found'),
+                default => null,
+            };
 
-$app->singleton(
-    Illuminate\Contracts\Console\Kernel::class,
-    App\Console\Kernel::class
-);
+            if (! $response) {
+                $message = config('app.debug') ? $e->getMessage() : '';
+                $response = ErrorInternalServerErrorResponse::make($message);
+            }
 
-$app->singleton(
-    Illuminate\Contracts\Debug\ExceptionHandler::class,
-    App\Exceptions\Handler::class
-);
-
-/*
-|--------------------------------------------------------------------------
-| Return The Application
-|--------------------------------------------------------------------------
-|
-| This script returns the application instance. The instance is given to
-| the calling script so we can separate the building of the instances
-| from the actual running of the application and sending responses.
-|
-*/
-
-return $app;
+            return $response->toResponse($request);
+        });
+    })->create();
